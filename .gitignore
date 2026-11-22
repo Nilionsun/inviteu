@@ -1,0 +1,47 @@
+# Next.js build outputs
+.next/
+/out/
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js cache
+.packages/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Vercel
+.vercel/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Middleman (commented out by default)
+# /site
+
+# gem fonts directory (commented out by default)
+# /fonts
+
+# AWS Amplify
+amplify/
+
+# Netlify
+netlify/
+
+# Cloudflare
+cloudflare/
+
+# Custom
+.DS_Store

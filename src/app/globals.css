@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: #FFF8F1;
+    --foreground: #341B16;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-primary-background text-text-primary font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(247, 214, 208, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(249, 233, 217, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(183, 122, 56, 0.08) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  * {
+    @apply border-border-cream;
+  }
+
+  ::selection {
+    @apply bg-primary-gold/30 text-text-primary;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-primary-cream;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-gold/40 rounded-full hover:bg-primary-gold/60 transition-colors;
+  }
+}
+
+@layer components {
+  /* Decorative floral corners */
+  .floral-corner {
+    @apply absolute w-16 h-16 opacity-60;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 10 C30 10 15 25 15 45 C15 65 30 80 50 80 C70 80 85 65 85 45 C85 25 70 10 50 10 Z M50 5 C25 5 5 25 5 50 C5 75 25 95 50 95 C75 95 95 75 95 50 C95 25 75 5 50 5 Z' fill='none' stroke='%23B77A38' stroke-width='1.5'/%3E%3Cpath d='M50 15 C35 15 22 28 22 43 C22 58 35 71 50 71 C65 71 78 58 78 43 C78 28 65 15 50 15 Z' fill='none' stroke='%23B77A38' stroke-width='1'/%3E%3Ccircle cx='50' cy='43' r='8' fill='%23F7D6D0'/%3E%3Ccircle cx='50' cy='43' r='4' fill='%23B77A38'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  .floral-corner-tl {
+    @apply top-4 left-4;
+    transform: rotate(0deg);
+  }
+
+  .floral-corner-tr {
+    @apply top-4 right-4;
+    transform: rotate(90deg);
+  }
+
+  .floral-corner-bl {
+    @apply bottom-4 left-4;
+    transform: rotate(-90deg);
+  }
+
+  .floral-corner-br {
+    @apply bottom-4 right-4;
+    transform: rotate(180deg);
+  }
+
+  /* Gold divider */
+  .gold-divider {
+    @apply relative w-24 h-1 mx-auto my-6;
+    background: linear-gradient(90deg, transparent, #B77A38, transparent);
+  }
+
+  .gold-divider::before,
+  .gold-divider::after {
+    content: '';
+    @apply absolute top-1/2 w-3 h-3 -translate-y-1/2;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B77A38' stroke-width='1.5'%3E%3Cpath d='M12 2C7.5 2 4 5.5 4 10c0 4.5 5.5 10 8 10s8-5.5 8-10c0-4.5-3.5-8-8-8z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .gold-divider::before {
+    @apply left-0;
+    transform: translateX(-100%);
+  }
+
+  .gold-divider::after {
+    @apply right-0;
+    transform: translateX(100%);
+  }
+
+  /* Premium button styles */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4
+    bg-gradient-to-r from-primary-gold to-primary-gold-dark
+    text-text-white font-medium text-body
+    rounded-button-lg
+    shadow-[0_4px_16px_rgba(183,122,56,0.3)]
+    hover:shadow-[0_8px_24px_rgba(183,122,56,0.4)]
+    hover:from-primary-gold-dark hover:to-primary-gold
+    active:scale-[0.98]
+    transition-all duration-300 ease-out
+    focus:outline-none focus:ring-2 focus:ring-primary-gold focus:ring-offset-2 focus:ring-offset-primary-background;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5
+    bg-surface-cream text-text-primary font-medium text-body-sm
+    border border-border-gold
+    rounded-button
+    hover:bg-primary-cream hover:border-primary-gold hover:shadow-card
+    active:scale-[0.98]
+    transition-all duration-300 ease-out
+    focus:outline-none focus:ring-2 focus:ring-primary-gold focus:ring-offset-2 focus:ring-offset-primary-background;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5
+    bg-transparent text-text-secondary font-medium text-body-sm
+    hover:text-primary-gold hover:bg-primary-blush/30
+    rounded-button
+    transition-all duration-300 ease-out
+    focus:outline-none focus:ring-2 focus:ring-primary-gold focus:ring-offset-2 focus:ring-offset-primary-background;
+  }
+
+  /* Card base */
+  .invitation-card {
+    @apply relative bg-surface-cream rounded-card-lg
+    border border-border-gold/50
+    shadow-card
+    overflow-hidden;
+  }
+
+  .invitation-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M100 20 C60 20 30 50 30 90 C30 130 60 160 100 160 C140 160 170 130 170 90 C170 50 140 20 100 20 Z M100 10 C55 10 20 45 20 90 C20 135 55 170 100 170 C145 170 180 135 180 90 C180 45 145 10 100 10 Z' fill='none' stroke='%23B77A38' stroke-width='0.5'/%3E%3C/svg%3E");
+    background-size: 200px;
+    background-repeat: repeat;
+    pointer-events: none;
+  }
+
+  /* Input styles */
+  .form-input {
+    @apply w-full px-4 py-3.5
+    bg-surface-cream text-text-primary
+    border border-border-gold/50
+    rounded-button
+    placeholder:text-text-muted
+    focus:outline-none focus:ring-2 focus:ring-primary-gold focus:border-primary-gold
+    transition-all duration-300 ease-out;
+  }
+
+  .form-label {
+    @apply block mb-2 text-body-sm font-medium text-text-secondary;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm
+    flex items-center justify-center p-4 z-50
+    animate-fade-in;
+  }
+
+  .modal-content {
+    @apply relative bg-surface-cream rounded-card-lg
+    border border-border-gold
+    shadow-modal
+    max-w-md w-full max-h-[90vh] overflow-y-auto
+    animate-scale-in;
+  }
+
+  /* Gallery image */
+  .gallery-image {
+    @apply relative aspect-[4/3] rounded-xl overflow-hidden
+    bg-primary-cream
+    transition-all duration-500 ease-out;
+  }
+
+  .gallery-image img {
+    @apply w-full h-full object-cover
+    transition-transform duration-500 ease-out;
+  }
+
+  .gallery-image:hover img {
+    @apply scale-105;
+  }
+
+  /* Scroll reveal animations */
+  .reveal-on-scroll {
+    @apply opacity-0;
+  }
+
+  .reveal-on-scroll.visible {
+    @apply animate-slide-up;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-text-primary via-text-secondary to-primary-gold bg-clip-text text-transparent;
+  }
+
+  .gradient-gold {
+    @apply bg-gradient-to-r from-primary-gold via-primary-gold-light to-primary-gold bg-clip-text text-transparent;
+  }
+}
