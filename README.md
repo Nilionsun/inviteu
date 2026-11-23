@@ -1,216 +1,273 @@
-# InviteAura - Premium Digital Wedding Invitations
+# InviteAura - Indian Wedding Invitation Platform
 
-## Overview
-InviteAura is a premium digital wedding invitation web application designed for Indian weddings. Built with Next.js 14, TypeScript, and Tailwind CSS, it offers a complete solution for wedding invitation management including RSVP, blessings, contributions, gallery, and host admin dashboard.
+A production-ready event invitation website focused on Indian weddings, built with Next.js 14, Supabase, and Tailwind CSS.
 
 ## Features
 
-### For Couples/Guests
-- **Beautiful Invitation Pages**: Premium-designed wedding invitation pages with Indian wedding aesthetics
-- **RSVP System**: Respond to invitations with attendance status
-- **Blessings**: Leave messages and well-wishes for the couple
-- **Contributions**: monetary contributions (₹) via Razorpay integration
-- **Gallery**: Wedding photo gallery viewing
-
-### For Admin/Host
-- **Authentication**: Supabase Auth for admin panel access
-- **Event Management**: Create, edit, duplicate, and delete wedding events
-- **RSVP Management**: View and manage guest RSVPs
-- **Blessings View**: Read all blessing messages
-- **Contributions Dashboard**: Track monetary contributions with Razorpay integration
-- **Gallery Management**: Upload and manage wedding photos
-- **Settings**: Admin configuration and options
+- **Public Guest-Facing Pages**: Dynamic routing by slug (`/[slug]`) with beautiful invitation layouts
+- **Secure Admin Dashboard**: Complete event management with Supabase Auth and Row Level Security (RLS)
+- **Multi-Function Events**: Support for multiple ceremonies (Mehndi, Sangeet, Wedding, Reception, etc.)
+- **RSVP System**: Guest responses with dietary preferences and guest counts
+- **Blessings/Wishes**: Guest messages with admin moderation
+- **Contributions**: UPI and Razorpay integration for monetary gifts
+- **Photo/Video Gallery**: Carousel with lightbox viewer
+- **Social Sharing**: QR codes, WhatsApp, Facebook, Twitter, Email, SMS
+- **SEO & OG Tags**: Dynamic meta tags per event for social sharing
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 3 with custom design system
-- **Animations**: Framer Motion for scroll-triggered animations
+- **Framework**: Next.js 14 (App Router) with TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: @supabase/ssr for SSR auth with cookies
+- **Storage**: Supabase Storage for media
+- **Animations**: Framer Motion
 - **Forms**: React Hook Form + Zod validation
 - **Icons**: Lucide React
-- **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **Payments**: Razorpay integration
-- **Deployment**: Vercel
-
-## Design System
-
-### Colors
-- **Primary Gold**: `#B77A38` (primary-gold, primary-gold-dark)
-- **Primary Cream**: `#F5E8E0` (primary-cream, surface-cream)
-- **Text Primary**: `#1A1A1A`
-- **Text Secondary**: `#6B7280`
-- **Border Gold**: `#B77A38` with varying opacity
-
-### Typography
-- **Display**: Cormorant Garamond (font-display)
-- **Headings**: Playfair Display
-- **Body**: Inter
-
-### Breakpoints
-- Mobile-first: `sm`, `md`, `lg`, `xl`, `2xl`
-
-## Available Scripts
-
-```bash
-# Install dependencies
-npm install
-
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Lint
-npm run lint
-```
+- **Deployment**: Vercel-ready
 
 ## Project Structure
 
 ```
-src/
-├── app/                    # Next.js 14 App Router
-│   ├── admin/              # Admin panel
-│   │   ├── dashboard/      # Dashboard page
-│   │   ├── events/         # Events management page
-│   │   ├── login/          # Admin login page
-│   │   ├── gallery/        # Gallery management
-│   │   ├── blessings/      # Blessings view
-│   │   ├── contributions/  # Contributions view
-│   │   └── settings/       # Admin settings
-│   └── [slug]/             # Dynamic invitation pages
-├── components/             # React components
-│   ├── ui/                 # UI primitives (Button, Input, Select, Card, Modal)
-│   └── invitation/         # Invitation-specific components
-├── lib/                    # Utility functions
-│   ├── utils.ts            # formatDate, formatCurrency, cn
-│   └── supabase.ts         # Supabase client
-└── types/                  # TypeScript type definitions
+inviteaura/
+├── src/
+│   ├── app/
+│   │   ├── [slug]/                 # Public invitation page
+│   │   │   ├── page.tsx            # Server component (data fetching + SEO)
+│   │   │   └── InvitationClient.tsx # Client component (UI + interactions)
+│   │   ├── admin/
+│   │   │   ├── login/page.tsx      # Admin login
+│   │   │   ├── layout.tsx          # Server layout (auth check)
+│   │   │   ├── AdminLayoutClient.tsx # Client layout (sidebar, nav)
+│   │   │   ├── dashboard/
+│   │   │   │   ├── page.tsx        # Server component (stats)
+│   │   │   │   └── AdminDashboardClient.tsx
+│   │   │   └── events/
+│   │   │       ├── page.tsx        # Server component (events list)
+│   │   │       └── AdminEventsClient.tsx # Full CRUD for events
+│   │   └── api/
+│   │       ├── rsvp/route.ts       # RSVP submissions
+│   │       ├── blessings/route.ts  # Blessings submissions
+│   │       ├── contributions/route.ts # Contributions + payments
+│   │       └── payment/razorpay/   # Razorpay integration
+│   ├── components/
+│   │   ├── invitation/             # Guest-facing components
+│   │   │   ├── Hero.tsx
+│   │   │   ├── Navigation.tsx
+│   │   │   ├── EventDetails.tsx
+│   │   │   ├── Gallery.tsx
+│   │   │   ├── RSVPForm.tsx
+│   │   │   ├── BlessingsForm.tsx
+│   │   │   ├── ContributionForm.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   └── ShareModal.tsx
+│   │   └── ui/                     # Reusable UI components
+│   ├── lib/
+│   │   ├── supabase/
+│   │   │   ├── client.ts           # Browser client
+│   │   │   ├── server.ts           # Server client (SSR)
+│   │   │   └── admin.ts            # Admin utilities
+│   │   └── utils.ts                # Helper functions
+│   └── middleware.ts               # Session refresh middleware
+├── supabase/
+│   └── migrations/
+│       ├── 20250101000000_initial_schema.sql
+│       └── 20250101000001_storage.sql
+└── public/
 ```
 
-## Configuration Files
+## Getting Started
 
-- `tailwind.config.js` - Tailwind CSS with custom design system
-- `tsconfig.json` - TypeScript configuration
-- `next.config.js` - Next.js settings
-- `package.json` - Dependencies and scripts
+### Prerequisites
 
-## Supabase Integration
+- Node.js 18+
+- npm or yarn
+- Supabase account
+- (Optional) Razorpay account for payments
 
-### Environment Variables
-
-Create `.env.local` with:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-project-ref
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vQRqXnG2DnLHAmxA_-3t9A_fWS_KFP5
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-### Database Tables
-
-Run the SQL in Supabase SQL editor to create required tables:
-
-```sql
--- Events table
-create table if not exists events (
-  id uuid default gen_random_uuid() primary key,
-  couple_name_1 text not null,
-  couple_name_2 text not null,
-  event_title text not null,
-  date text not null,
-  time text not null,
-  venue_name text not null,
-  venue_address text not null,
-  status text default 'draft',
-  rsvp_count integer default 0,
-  blessing_count integer default 0,
-  contribution_count integer default 0,
-  total_contributions decimal default 0,
-  slug text unique not null,
-  created_at timestamp default now(),
-  updated_at timestamp default now()
-);
-
--- RSVPs table
-create table if not exists rsvps (
-  id uuid default gen_random_uuid() primary key,
-  event_id uuid references events(id) on delete cascade,
-  name text not null,
-  email text,
-  accepted boolean default false,
-  created_at timestamp default now()
-);
-
--- Blessings table
-create table if not exists blessings (
-  id uuid default gen_random_uuid() primary key,
-  event_id uuid references events(id) on delete cascade,
-  name text not null,
-  message text,
-  created_at timestamp default now()
-);
-
--- Contributions table
-create table if not exists contributions (
-  id uuid default gen_random_uuid() primary key,
-  event_id uuid references events(id) on delete cascade,
-  name text not null,
-  amount integer not null,
-  currency text default 'INR',
-  created_at timestamp default now()
-);
-```
-
-## Vercel Deployment
-
-### Quick Deploy
-
-1. **Connect GitHub Repository**:
-   - Go to [vercel.com](https://vercel.com)
-   - Click "Add New Project"
-   - Import from GitHub: `Nilionsun/Invite-aura`
-   - Framework: Next.js (auto-detected)
-
-2. **Environment Variables**:
-   In Vercel Dashboard → Project Settings → Environment Variables, add:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-project-ref
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vQRqXnG2DnLHAmxA_-3t9A_fWS_KFP5
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-   ```
-
-3. **Deploy**:
-   - Click "Deploy"
-   - Site will be available at `https://invite-aura.vercel.app`
-
-### Vercel CLI Deployment
+### 1. Clone and Install
 
 ```bash
-# Install
-npm i -g vercel
-
-# Login
-vercel login
-
-# Deploy
-vercel
-
-# Production
-vercel --prod
+cd inviteaura
+npm install
 ```
+
+### 2. Set Up Supabase
+
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Go to SQL Editor and run the migrations in order:
+   - `supabase/migrations/20250101000000_initial_schema.sql`
+   - `supabase/migrations/20250101000001_storage.sql`
+3. Go to Authentication > Settings and configure:
+   - Enable Email/Password provider
+   - Set Site URL to your domain (e.g., `http://localhost:3000` for dev)
+   - Add redirect URLs: `http://localhost:3000/**`
+4. Go to Storage and create buckets:
+   - `event-media` (public)
+   - `invitation-assets` (public)
+
+### 3. Configure Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon/public key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (keep secret!)
+
+Optional for payments:
+- `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` - Razorpay credentials
+- `UPI_ID` - Your UPI ID for direct payments
+
+### 4. Create Admin User
+
+1. Sign up a user through your app at `/admin/login`
+2. In Supabase Dashboard > Authentication > Users, find the user
+3. Go to Table Editor > `profiles` table and set `role = 'admin'` for that user
+
+### 5. Run Development Server
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000` - you'll see a 404 until you create an event.
+
+Visit `http://localhost:3000/admin/login` to access the admin dashboard.
+
+## Creating Your First Event
+
+1. Log in to `/admin/login` with your admin account
+2. Go to Dashboard > "New Event" or `/admin/events/new`
+3. Fill in:
+   - **Basic Info**: Couple names, event title, type, slug (URL-friendly)
+   - **Date & Time**: Event date, time, timezone
+   - **Venue**: Name, address, Google Maps URL
+   - **Hero Image**: Upload or provide URL
+   - **RSVP Settings**: Deadline, max guests per RSVP
+   - **Features**: Enable/disable RSVP, Blessings, Contributions, Gallery
+4. Save - the event will be created as a draft
+5. Click "Publish" to make it live at `yourdomain.com/[slug]`
+
+## Database Schema
+
+### Key Tables
+
+- **profiles** - Extends auth.users with role (user/admin)
+- **events** - Main event data with slug-based routing
+- **event_functions** - Multiple ceremonies per event
+- **gallery_items** - Photos/videos for gallery
+- **guests** - Invited guest list (optional)
+- **rsvps** - Guest responses
+- **blessings** - Well wishes (require approval)
+- **contributions** - Monetary gifts with payment tracking
+- **payment_transactions** - Detailed payment records
+- **event_settings** - Per-event feature flags and config
+
+### Row Level Security (RLS)
+
+All tables have RLS enabled with policies for:
+- **Public (anon)**: Read published events, submit RSVP/blessings/contributions
+- **Authenticated (user)**: Own profile, own events CRUD
+- **Admin**: Full access to all data
+
+## API Routes
+
+### POST /api/rsvp
+Submit RSVP response
+```json
+{
+  "eventId": "uuid",
+  "name": "John Doe",
+  "phone": "+919876543210",
+  "email": "john@example.com",
+  "attendance": "accepted",
+  "numberOfGuests": 2,
+  "guestNames": "John, Jane",
+  "dietaryPreferences": "Vegetarian",
+  "message": "Looking forward to it!"
+}
+```
+
+### POST /api/blessings
+Submit blessing/wish
+```json
+{
+  "eventId": "uuid",
+  "senderName": "Jane Doe",
+  "message": "Wishing you a lifetime of happiness!",
+  "isAnonymous": false,
+  "allowPublic": true,
+  "blessingType": "text"
+}
+```
+
+### POST /api/contributions
+Initiate contribution
+```json
+{
+  "eventId": "uuid",
+  "contributorName": "John Doe",
+  "contributorPhone": "+919876543210",
+  "amount": 2100,
+  "paymentMethod": "upi",
+  "upiId": "name@bank"
+}
+```
+
+Returns `paymentUrl` for UPI deep link or Razorpay order URL.
+
+### GET/POST /api/payment/razorpay
+- GET: Get Razorpay order details for client-side checkout
+- POST: Verify payment signature and update status
+
+## Deployment to Vercel
+
+1. Push to GitHub/GitLab/Bitbucket
+2. Import project in Vercel
+3. Add environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - (Optional) Razorpay keys
+4. Deploy!
+
+### Post-Deployment
+
+1. Update Supabase Auth settings with your Vercel domain
+2. Update Storage CORS if needed
+3. Test all flows: RSVP, Blessings, Contributions
+
+## Security Checklist
+
+- ✅ Service role key only in server-side code (never exposed to client)
+- ✅ RLS policies on all tables
+- ✅ Admin routes protected by server-side role check
+- ✅ Rate limiting + honeypot on public API endpoints
+- ✅ Input validation with Zod schemas
+- ✅ SQL injection prevention via Supabase client
+- ✅ XSS prevention via React's built-in escaping
+
+## Customization
+
+### Themes
+Modify `theme` JSON in events table or extend `src/components/invitation/` components.
+
+### Styling
+Tailwind config in `tailwind.config.ts` - colors defined for Indian wedding aesthetic:
+- `primary-gold`, `primary-blush`, `primary-cream`, `primary-background`
+
+### Components
+All invitation components in `src/components/invitation/` are modular and can be customized independently.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License - feel free to use for your own wedding or client projects!
 
-## Acknowledgements
+## Support
 
-- Design inspiration from Indian wedding traditions
-- Built with Claude Code assistance
-- Icons from Lucide React
-- Fonts: Cormorant Garamond, Playfair Display from Google Fonts
+For issues or questions, please open a GitHub issue.

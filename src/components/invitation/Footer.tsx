@@ -20,6 +20,8 @@ interface FooterProps {
     whatsapp?: string;
   };
   rsvpDeadline?: string;
+  footerText?: string;
+  footerDateLocation?: string;
 }
 
 export function Footer({

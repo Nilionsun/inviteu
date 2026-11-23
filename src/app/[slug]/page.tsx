@@ -1,277 +1,172 @@
-'use client';
+import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
+import InvitationClient from './InvitationClient'
 
-import { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Menu, X, User, LogOut, Loader2 } from 'lucide-react';
-import { cn, scrollToSection, formatDate } from '../../lib/utils';
-import { Navigation } from '../../components/invitation/Navigation';
-import { Hero } from '../../components/invitation/Hero';
-import { EventDetails } from '../../components/invitation/EventDetails';
-import { Gallery } from '../../components/invitation/Gallery';
-import { ActionButtons } from '../../components/invitation/ActionButtons';
-import { Footer } from '../../components/invitation/Footer';
-import { RSVPForm } from '../../components/invitation/RSVPForm';
-import { BlessingsForm } from '../../components/invitation/BlessingsForm';
-import { ContributionForm } from '../../components/invitation/ContributionForm';
-import { ShareModal } from '../../components/invitation/ShareModal';
-import type { GalleryItem } from '@/components/invitation/Gallery';
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params
+  const supabase = await createClient()
 
-interface InvitationPageProps {
-  params: Promise<{ slug: string }>;
+  const { data: event } = await supabase
+    .from('events')
+    .select('couple_name_1, couple_name_2, event_title, date, venue_name, hero_image, seo_title, seo_description, og_image')
+    .eq('slug', resolvedParams.slug)
+    .eq('is_published', true)
+    .single()
+
+  if (!event) {
+    return {
+      title: 'Invitation Not Found',
+      description: 'The invitation you are looking for does not exist or is not published.',
+    }
+  }
+
+  return {
+    title: event.seo_title || `${event.couple_name_1} & ${event.couple_name_2} - ${event.event_title}`,
+    description: event.seo_description || `You're invited to ${event.couple_name_1} & ${event.couple_name_2}'s ${event.event_title} on ${new Date(event.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} at ${event.venue_name}.`,
+    openGraph: {
+      title: event.seo_title || `${event.couple_name_1} & ${event.couple_name_2} - ${event.event_title}`,
+      description: event.seo_description || `You're invited to ${event.couple_name_1} & ${event.couple_name_2}'s ${event.event_title}`,
+      images: event.og_image || event.hero_image ? [{ url: event.og_image || event.hero_image }] : [],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: event.seo_title || `${event.couple_name_1} & ${event.couple_name_2} - ${event.event_title}`,
+      description: event.seo_description || `You're invited to ${event.couple_name_1} & ${event.couple_name_2}'s ${event.event_title}`,
+      images: event.og_image || event.hero_image ? [event.og_image || event.hero_image] : [],
+    },
+  }
 }
 
-// Mock data for the invitation - in production this would come from Supabase
-const mockEventData = {
-  slug: 'priya-arjun-wedding',
-  coupleName1: 'Priya',
-  coupleName2: 'Arjun',
-  eventTitle: 'Wedding Ceremony',
-  heroImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1920&q=80',
-  heroImagePosition: 'right' as const,
-  date: '2025-02-15',
-  time: '16:30',
-  venueName: 'The Grand Palace',
-  venueAddress: 'MG Road, Bengaluru, Karnataka 560001',
-  googleMapsUrl: 'https://maps.google.com/?q=The+Grand+Palace+MG+Road+Bengaluru',
-  importantInfo: 'Traditional attire encouraged. Please arrive 30 minutes before the ceremony. Valet parking available.',
-  rsvpDeadline: '2025-01-15',
-  timezone: 'Asia/Kolkata',
-  galleryTitle: 'Our Journey Together',
-  gallerySubtitle: 'Memories from our pre-wedding celebrations',
-  galleryItems: [
-    {
-      id: '1',
-      type: 'image' as const,
-      url: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1200&q=80',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&q=80',
-      caption: 'Mehendi Ceremony',
-      altText: 'Priya\'s mehendi ceremony with intricate henna designs',
+export default async function InvitationPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params
+  const supabase = await createClient()
+
+  // Fetch event data
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('*')
+    .eq('slug', resolvedParams.slug)
+    .eq('is_published', true)
+    .single()
+
+  if (eventError || !event) {
+    notFound()
+  }
+
+  // Fetch event functions
+  const { data: functions } = await supabase
+    .from('event_functions')
+    .select('*')
+    .eq('event_id', event.id)
+    .order('display_order', { ascending: true })
+
+  // Fetch gallery items
+  const { data: gallery } = await supabase
+    .from('gallery_items')
+    .select('*')
+    .eq('event_id', event.id)
+    .order('display_order', { ascending: true })
+
+  // Fetch event settings
+  const { data: settings } = await supabase
+    .from('event_settings')
+    .select('*')
+    .eq('event_id', event.id)
+    .single()
+
+  // Fetch host profile
+  const { data: host } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url')
+    .eq('id', event.host_id)
+    .single()
+
+  // Transform data to match client component expectations
+  const eventData = {
+    event: {
+      id: event.id,
+      slug: event.slug,
+      hostId: event.host_id,
+      title: event.title,
+      description: event.description || '',
+      coupleName1: event.couple_name_1,
+      coupleName2: event.couple_name_2,
+      eventType: event.event_type,
+      date: event.date,
+      time: event.time,
+      timezone: event.timezone,
+      venueName: event.venue_name,
+      venueAddress: event.venue_address,
+      venueCoordinates: event.venue_coordinates,
+      googleMapsUrl: event.google_maps_url,
+      importantInfo: event.important_info || '',
+      rsvpDeadline: event.rsvp_deadline,
+      maxGuestsPerRsvp: event.max_guests_per_rsvp,
+      heroImage: event.hero_image || '',
+      coverImage: event.cover_image || '',
+      heroImagePosition: event.hero_image_position,
+      theme: event.theme || {},
+      isPublished: event.is_published,
+      createdAt: event.created_at,
+      updatedAt: event.updated_at,
     },
-    {
-      id: '2',
-      type: 'image' as const,
-      url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=80',
-      caption: 'Mandap Decorations',
-      altText: 'Beautifully decorated wedding mandap with flowers',
-    },
-    {
-      id: '3',
-      type: 'image' as const,
-      url: 'https://images.unsplash.com/photo-1606219592791-211e4529659b?w=1200&q=80',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1606219592791-211e4529659b?w=400&q=80',
-      caption: 'Engagement Rings',
-      altText: 'Close up of the engagement rings',
-    },
-    {
-      id: '4',
-      type: 'image' as const,
-      url: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1200&q=80',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&q=80',
-      caption: 'Sangeet Night',
-      altText: 'Couple dancing at their sangeet ceremony',
-    },
-    {
-      id: '5',
-      type: 'image' as const,
-      url: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1200&q=80',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400&q=80',
-      caption: 'Floral Decorations',
-      altText: 'Stunning floral arrangements at the venue',
-    },
-    {
-      id: '6',
-      type: 'image' as const,
-      url: 'https://images.unsplash.com/photo-1537633527864-b21f2b2c1e6e?w=1200&q=80',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1537633527864-b21f2b2c1e6e?w=400&q=80',
-      caption: 'Haldi Ceremony',
-      altText: 'Traditional haldi ceremony with family',
-    },
-  ] as GalleryItem[],
-  contactEmail: 'priya.arjun.wedding@example.com',
-  contactPhone: '+91 98765 43210',
-  socialLinks: {
-    instagram: 'https://instagram.com/priyaarjunwedding',
-    facebook: 'https://facebook.com/priyaarjunwedding',
-    whatsapp: 'https://wa.me/919876543210',
-  },
-  upiId: 'priya.arjun@upi',
-};
+    functions: (functions || []).map(f => ({
+      id: f.id,
+      eventId: f.event_id,
+      title: f.title,
+      description: f.description || '',
+      date: f.date,
+      time: f.time,
+      venueName: f.venue_name,
+      venueAddress: f.venue_address,
+      isMainEvent: f.is_main_event,
+      order: f.display_order,
+    })),
+    gallery: (gallery || []).map(g => ({
+      id: g.id,
+      eventId: g.event_id,
+      type: g.type,
+      url: g.url,
+      thumbnailUrl: g.thumbnail_url,
+      caption: g.caption,
+      altText: g.alt_text,
+      order: g.display_order,
+      width: g.width,
+      height: g.height,
+      duration: g.duration,
+      createdAt: g.created_at,
+    })),
+    settings: settings ? {
+      id: settings.id,
+      eventId: settings.event_id,
+      upiId: settings.upi_id,
+      upiQrCode: settings.upi_qr_code,
+      razorpayKeyId: settings.razorpay_key_id,
+      razorpayKeySecret: settings.razorpay_key_secret,
+      isContributionsEnabled: settings.is_contributions_enabled,
+      isRsvpEnabled: settings.is_rsvp_enabled,
+      isBlessingsEnabled: settings.is_blessings_enabled,
+      isGalleryEnabled: settings.is_gallery_enabled,
+      contributionAmounts: settings.contribution_amounts,
+      allowCustomAmount: settings.allow_custom_amount,
+      customDomain: settings.custom_domain,
+      seoTitle: settings.seo_title,
+      seoDescription: settings.seo_description,
+      ogImage: settings.og_image,
+      socialLinks: settings.social_links || {},
+      footerText: settings.footer_text || '',
+      footerDateLocation: settings.footer_date_location || '',
+    } : null,
+    host: host ? {
+      id: host.id,
+      email: '', // Not available in profiles table
+      fullName: host.full_name || '',
+      avatarUrl: host.avatar_url,
+      createdAt: '',
+      updatedAt: '',
+    } : null,
+  }
 
-export default function InvitationPage({ params }: InvitationPageProps) {
-  // Resolve params
-  const [slug, setSlug] = useState<string>('');
-
-  useEffect(() => {
-    params.then((resolvedParams) => {
-      setSlug(resolvedParams.slug);
-    });
-  }, [params]);
-
-  // Modal states
-  const [showRsvp, setShowRsvp] = useState(false);
-  const [showBlessings, setShowBlessings] = useState(false);
-  const [showContribution, setShowContribution] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-
-  // Loading states
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionType, setSubmissionType] = useState<'rsvp' | 'blessings' | 'contribution' | null>(null);
-
-  // Handle form submissions
-  const handleRsvpSubmit = useCallback(async (data: any) => {
-    setIsSubmitting(true);
-    setSubmissionType('rsvp');
-    try {
-      // In production: call API route to save to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('RSVP submitted:', data);
-    } finally {
-      setIsSubmitting(false);
-      setSubmissionType(null);
-    }
-  }, []);
-
-  const handleBlessingsSubmit = useCallback(async (data: any) => {
-    setIsSubmitting(true);
-    setSubmissionType('blessings');
-    try {
-      // In production: call API route to save to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Blessings submitted:', data);
-    } finally {
-      setIsSubmitting(false);
-      setSubmissionType(null);
-    }
-  }, []);
-
-  const handleContributionSubmit = useCallback(async (data: any) => {
-    setIsSubmitting(true);
-    setSubmissionType('contribution');
-    try {
-      // In production: integrate with Razorpay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Contribution submitted:', data);
-    } finally {
-      setIsSubmitting(false);
-      setSubmissionType(null);
-    }
-  }, []);
-
-  // Determine which form is submitting
-  const isRsvpSubmitting = isSubmitting && submissionType === 'rsvp';
-  const isBlessingsSubmitting = isSubmitting && submissionType === 'blessings';
-  const isContributionSubmitting = isSubmitting && submissionType === 'contribution';
-
-  // Handle scroll to event details
-  const handleScrollToDetails = useCallback(() => {
-    scrollToSection('event-details');
-  }, []);
-
-  // Generate invitation URL for sharing
-  const invitationUrl = typeof window !== 'undefined'
-    ? window.location.origin + window.location.pathname
-    : `https://inviteaura.com/${slug}`;
-
-  const eventDateFormatted = formatDate(mockEventData.date);
-
-  return (
-    <div className="min-h-screen bg-primary-background">
-      {/* Navigation */}
-      <Navigation
-        coupleName1={mockEventData.coupleName1}
-        coupleName2={mockEventData.coupleName2}
-        onLoginClick={() => {
-          // In production: redirect to admin login
-          window.location.href = '/admin/login';
-        }}
-      />
-
-      {/* Hero Section */}
-      <Hero
-        coupleName1={mockEventData.coupleName1}
-        coupleName2={mockEventData.coupleName2}
-        heroImage={mockEventData.heroImage}
-        heroImagePosition={mockEventData.heroImagePosition}
-        onScrollToDetails={handleScrollToDetails}
-      />
-
-      {/* Event Details */}
-      <EventDetails
-        date={mockEventData.date}
-        time={mockEventData.time}
-        venueName={mockEventData.venueName}
-        venueAddress={mockEventData.venueAddress}
-        googleMapsUrl={mockEventData.googleMapsUrl}
-        importantInfo={mockEventData.importantInfo}
-        rsvpDeadline={mockEventData.rsvpDeadline}
-        timezone={mockEventData.timezone}
-      />
-
-      {/* Gallery */}
-      <Gallery
-        title={mockEventData.galleryTitle}
-        subtitle={mockEventData.gallerySubtitle}
-        items={mockEventData.galleryItems}
-      />
-
-      {/* Action Buttons */}
-      <ActionButtons
-        onRsvpClick={() => setShowRsvp(true)}
-        onBlessingsClick={() => setShowBlessings(true)}
-        onContributionClick={() => setShowContribution(true)}
-        onShareClick={() => setShowShare(true)}
-      />
-
-      {/* Footer */}
-      <Footer
-        coupleNames={`${mockEventData.coupleName1} & ${mockEventData.coupleName2}`}
-        eventTitle={mockEventData.eventTitle}
-        eventDate={eventDateFormatted}
-        venueName={mockEventData.venueName}
-        venueAddress={mockEventData.venueAddress}
-        contactEmail={mockEventData.contactEmail}
-        contactPhone={mockEventData.contactPhone}
-        socialLinks={mockEventData.socialLinks}
-        rsvpDeadline={formatDate(mockEventData.rsvpDeadline)}
-      />
-
-      {/* Modals */}
-      <RSVPForm
-        isOpen={showRsvp}
-        onClose={() => setShowRsvp(false)}
-        onSubmit={handleRsvpSubmit}
-        eventTitle={mockEventData.eventTitle}
-        rsvpDeadline={mockEventData.rsvpDeadline}
-        isSubmitting={isRsvpSubmitting}
-      />
-
-      <BlessingsForm
-        isOpen={showBlessings}
-        onClose={() => setShowBlessings(false)}
-        onSubmit={handleBlessingsSubmit}
-        coupleNames={`${mockEventData.coupleName1} & ${mockEventData.coupleName2}`}
-        isSubmitting={isBlessingsSubmitting}
-      />
-
-      <ContributionForm
-        isOpen={showContribution}
-        onClose={() => setShowContribution(false)}
-        onSubmit={handleContributionSubmit}
-        coupleNames={`${mockEventData.coupleName1} & ${mockEventData.coupleName2}`}
-        upiId={mockEventData.upiId}
-        isSubmitting={isContributionSubmitting}
-      />
-
-      <ShareModal
-        isOpen={showShare}
-        onClose={() => setShowShare(false)}
-        invitationUrl={invitationUrl}
-        coupleNames={`${mockEventData.coupleName1} & ${mockEventData.coupleName2}`}
-        eventTitle={mockEventData.eventTitle}
-        eventDate={eventDateFormatted}
-        heroImage={mockEventData.heroImage}
-      />
-    </div>
-  );
+  return <InvitationClient data={eventData} />
 }

@@ -1,261 +1,202 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { cn } from '@/lib/utils';
-import { Button, Input } from '@/components/ui';
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  rememberMe: z.boolean().optional(),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      rememberMe: true,
-    },
-  });
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  const handleLogin = async (data: LoginFormData) => {
-    setError('');
-    setIsLoading(true);
-    try {
-      // In production: call API route to authenticate with Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    setIsLoading(true)
 
-      // Mock successful login - in production, verify credentials
-      if (data.email === 'admin@inviteaura.com' && data.password === 'inviteaura2025') {
-        setToast({ type: 'success', message: 'Welcome back! Redirecting to dashboard...' });
-        setTimeout(() => {
-          router.push('/admin/dashboard');
-          router.refresh();
-        }, 1500);
-      } else {
-        setError('Invalid email or password. Use admin@inviteaura.com / inviteaura2025 for demo.');
-      }
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setIsLoading(false);
+    const supabase = createClient()
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    setIsLoading(false)
+
+    if (signInError) {
+      setError(signInError.message)
+      return
     }
-  };
 
-  const handleForgotPassword = () => {
-    setToast({ type: 'error', message: 'Password reset not implemented in demo.' });
-  };
+    // Check if user is admin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        await supabase.auth.signOut()
+        setError('Access denied. Admin privileges required.')
+        return
+      }
+    }
+
+    setSuccess('Login successful! Redirecting...')
+    setTimeout(() => {
+      router.push(redirectTo)
+      router.refresh()
+    }, 1000)
+  }
 
   return (
-    <div className="min-h-screen bg-primary-background flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="w-full max-w-md"
-      >
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-4 py-12">
+      <div className="w-full max-w-md">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 150, damping: 12 }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary-gold/10 mb-6"
-          >
-            <Lock className="w-10 h-10 text-primary-gold" />
-          </motion.div>
-          <h1 className="font-display font-medium text-3xl text-text-primary mb-2">
-            InviteAura Admin
-          </h1>
-          <p className="text-body text-text-secondary">
-            Sign in to manage your wedding invitations
-          </p>
+          <Link href="/" className="inline-flex items-center gap-2">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
+              InviteAura
+            </span>
+          </Link>
+          <p className="mt-4 text-amber-600 text-sm">Admin Dashboard</p>
         </div>
 
-        {/* Toast */}
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={cn(
-              'mb-6 p-4 rounded-xl flex items-center gap-3 animate-slide-down',
-              toast.type === 'success'
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
-            )}
-            role="alert"
-          >
-            {toast.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            )}
-            <span className="text-body-sm font-medium">{toast.message}</span>
-          </motion.div>
-        )}
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-amber-100">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Sign In</h1>
+          <p className="text-gray-500 text-center mb-8">Enter your credentials to access the admin panel</p>
 
-        {/* Login Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="bg-surface-cream rounded-2xl border border-border-gold/50 p-8 shadow-xl"
-        >
-          <form onSubmit={handleSubmit(handleLogin)} className="space-y-5" noValidate>
-            {/* Email */}
+          {error && (
+            <div className="mb-6 flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+              <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+              </svg>
+              <span>{success}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="form-label">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email Address
               </label>
-              <Input
+              <input
                 id="email"
+                name="email"
                 type="email"
-                placeholder="admin@inviteaura.com"
-                {...register('email')}
                 autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={cn(
+                  'w-full px-4 py-3 border rounded-lg transition-colors',
+                  'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent',
+                  'bg-white text-gray-900 placeholder:text-gray-400',
+                  'border-gray-200 hover:border-gray-300'
+                )}
+                placeholder="admin@inviteaura.com"
                 disabled={isLoading}
-                error={errors.email?.message}
               />
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-600" role="alert">{errors.email.message}</p>
-              )}
             </div>
 
-            {/* Password */}
             <div>
-              <label htmlFor="password" className="form-label">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Input
+                <input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  {...register('password')}
                   autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={cn(
+                    'w-full px-4 py-3 border rounded-lg transition-colors pr-12',
+                    'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent',
+                    'bg-white text-gray-900 placeholder:text-gray-400',
+                    'border-gray-200 hover:border-gray-300'
+                  )}
+                  placeholder="••••••••"
                   disabled={isLoading}
-                  error={errors.password?.message}
-                  className="pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-2 text-sm text-red-600" role="alert">{errors.password.message}</p>
-              )}
             </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register('rememberMe')}
-                  className="w-4 h-4 rounded border-border-gold/50 text-primary-gold focus:ring-primary-gold"
-                  disabled={isLoading}
-                />
-                <span className="text-body-sm text-text-secondary">Remember me</span>
-              </label>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-body-sm text-primary-gold hover:underline transition-colors"
-                disabled={isLoading}
-              >
-                Forgot password?
-              </button>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3"
-                role="alert"
-              >
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                <p className="text-red-700 text-body-sm">{error}</p>
-              </motion.div>
-            )}
-
-            {/* Submit Button */}
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              isLoading={isLoading}
+              disabled={isLoading}
+              className={cn(
+                'w-full py-3 px-4 rounded-lg font-medium transition-all',
+                'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2',
+                isLoading
+                  ? 'bg-amber-400 text-white cursor-not-allowed'
+                  : 'bg-gradient-to-r from-amber-600 to-orange-500 text-white hover:from-amber-700 hover:to-orange-600 shadow-lg shadow-amber-500/25'
+              )}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-              <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-            </Button>
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
+                </span>
+              ) : (
+                'Sign In'
+              )}
+            </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-border-gold/30">
-            <p className="text-center text-body-sm text-text-muted mb-3">
-              Demo Credentials
-            </p>
-            <div className="space-y-2 text-body-sm text-text-secondary">
-              <div className="flex justify-between">
-                <span>Email:</span>
-                <code className="bg-primary-gold/10 px-2 py-0.5 rounded font-mono">admin@inviteaura.com</code>
-              </div>
-              <div className="flex justify-between">
-                <span>Password:</span>
-                <code className="bg-primary-gold/10 px-2 py-0.5 rounded font-mono">inviteaura2025</code>
-              </div>
-            </div>
+          <div className="mt-6 text-center">
+            <Link
+              href="/"
+              className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
+            >
+              ← Back to Home
+            </Link>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Footer */}
-        <p className="text-center text-body-sm text-text-muted mt-8">
-          © 2025 InviteAura. Premium Digital Wedding Invitations.
-        </p>
-      </motion.div>
-
-      <style jsx global>{`
-        .animate-slide-down {
-          animation: slideDown 0.3s ease-out;
-        }
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+        {/* Demo credentials hint */}
+        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <p className="font-medium mb-1">Demo Credentials:</p>
+          <p className="font-mono text-xs">admin@inviteaura.com</p>
+          <p className="font-mono text-xs">inviteaura2025</p>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
